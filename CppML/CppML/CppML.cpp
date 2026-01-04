@@ -28,7 +28,6 @@ int main()
 
     m1.print_data();
     m2.print_data();
-    m1.matmul2D(m2).print_data();
-
+    m1.matmul(m2).print_data();
 
 }

@@ -55,9 +55,42 @@ private:
 		return flat_index;
 	}
 
+	/*
+		This is an internal function used for computing matrix multiplcation directly at memory address. 
+		The goal is to use this as a helper function for batched matrix multiplcation (high dimensional tensor multiplcation).
+		This function should directly modify the value at C_ptr.
+		
+		Params: 
+			A_ptr: a pointer to the first matrix (A)
+			B_ptr: a pointer to the second matrix (B)
+			C_ptr: a pointer to the location to store the matrix product of A@B
+			M: the # of rows of A@B, 
+			N: the # of cols of A@B
+			K: the matching # of cols/rows in A@B.
+		
+	*/
+	static void _matmul(const T* A_ptr, const T* B_ptr, T* C_ptr, size_t M, size_t N, size_t K) {
+		for (size_t m = 0; m < M; ++m) {
+			for (size_t n = 0; n < N; ++n) {
+				T entry = T();
+				for (size_t k = 0; k < K; ++k) {
+					entry += A_ptr[k + m * K] * B_ptr[k * N + n];
+				}
+				C_ptr[m * N + n] = entry;
+			}
+		}
+	}
+
 public:
 
 	// ==================== Constructor ======================
+	/*
+		Constructs a N-dimensional array (tensor) using the specified shape.
+
+		Params: 
+			shape_input: std::vector<size_t>{... args},  
+	
+	*/
 	NDArray(const std::vector<size_t>& shape_input) : shape(shape_input) {
 		strides.resize(shape.size());
 		size_t current_stride = 1;
@@ -88,7 +121,12 @@ public:
 	}
 
 	// ===================== Math Operations ======================
-	// ------- Elementwise Addition ---------
+	/*
+		Performs elementwise tensor additions.
+		
+		Params:
+			other: The second ndarray we are adding with.
+	*/
 	NDArray<T> operator+(const NDArray<T>& other) const {
 		if (shape != other.shape) {
 			throw std::invalid_argument("The two ndarrays must have the same shape!");
@@ -101,12 +139,22 @@ public:
 		return result;
 	}
 
-	// ----------- Check Equality ----------------
+	/*
+		Checks if two ndarrays are equivalent.
+
+		Params:
+			other: The second ndarray;
+	*/
 	bool operator==(const NDArray<T>& other) const {
 		return (shape == other.shape) && (data == other.data);
 	}
 
-	// --------- Scalar Multiplication -------------
+	/*
+		Performs element-wise scalar multiplication;
+
+		Params:
+			scalar: the value the tensor is multiplying by.
+	*/
 	NDArray<T> operator*(T scalar) const {
 		NDArray<T> result(shape);
 		for (size_t i = 0; i < data.size(); ++i) {
@@ -128,17 +176,89 @@ public:
 		the 2 matrices, obtain the result and store it in a result ndarray. We then move each 
 		pointers along their respective strides, and repeat the matrix multiplication process again
 		& again.
+
+		Params: 
+			other: The second tensor (ndarray)
+	*/
+	NDArray<T> batched_matmul(const NDArray& other) const {
+		if (other.shape.size() != shape.size()) {
+			throw std::invalid_argument("The dimensions of the ndarrays do not match!");
+		}
+		if (!std::equal(shape.begin(), shape.end() - 2, other.shape.begin())) {
+			throw std::invalid_argument("The batches for each ndarray must be the same!");
+		}
+
+		// TODO: implement the batched matrix multiplication;
+		size_t M = shape[shape.size() - 2];
+		size_t N = other.shape[other.shape.size() - 1];
+		size_t K = shape[shape.size() - 1];
+
+		size_t size_A = strides[1];
+		size_t size_B = other.strides[1];
+		size_t size_C = M * N;
+
+		// Parepare the result NDArray:
+		std::vector<size_t> res_shape(shape.begin(), shape.end() - 2);
+		res_shape.push_back(M);
+		res_shape.push_back(N);
+		NDArray<T> res(res_shape);
+
+		// Get the pointers
+		T* ptr_A = data.data();
+		T* ptr_B = other.data.data();
+		T* ptr_C = res.data.data();
+
+		// Compute the size of the batch
+		size_t total_elements = data.size();
+		size_t batch_count = total_elements / size_A;
+
+		for (size_t i = 0; i < total_elements; ++i) {
+			_matmul(ptr_A, ptr_B, ptr_C, M, N, K);
+
+			ptr_A += size_A;
+			ptr_B += size_B;
+			ptr_C += size_C;
+		}
+
+		return res;
+	}
+
+
+	/*
+		Computes the product of 2 matrices. Standard matrix multiplcation. (Recall that matrices are by definition 2D).
+
+		Params:
+			other: The second matrix.
 	*/
 	NDArray<T> matmul(const NDArray& other) const {
-		 
+		if (shape.size() != 2 || other.shape.size() != 2) {
+			throw std::invalid_argument("Each ndarray must be a matrix (2D NDArray)!");
+		}
+		if (shape[1] != other.shape[0]) {
+			throw std::invalid_argument("The number of columns in your first matrix does not align with the number of rows in your second matrix!");
+		}
 
+		size_t M = shape[0];
+		size_t N = other.shape[1];
+		size_t K = shape[1];
+
+		NDArray<T> result({M, N});
+		
+		// Recall taking the .data() property of a vector yields the pointer that points to the first value of the vector.
+		_matmul(data.data(), other.data.data(), result.data.data(), M, N, K);
+
+		return result;
 	}
 
 
 	/*
 		Performs matrix multiplication, strictly restricsts the dimension of each array to be 2D.
+		Legacy Implementation: very slow if we were to reuse this function for the batched matrix multiplication. This is a performance killer for math library, so we kinda need to pivot away from this approach.
+	
+		Params:
+			other: The second matrix.
 	*/
-	NDArray<T> matmul2D(const NDArray& other) const {
+	NDArray<T> matmul_legacy(const NDArray& other) const {
 		if (shape.size() != 2 || other.shape.size() != 2) {
 			throw std::invalid_argument("Each ndarray must be a matrix (2D NDArray)!");
 		}
@@ -162,6 +282,11 @@ public:
 
 
 	// =================== Utility Functions ======================
+
+
+	/*
+		Prints the tensor in falttened form.
+	*/
 	void print_data() const {
 		std::cout << "[ ";
 		for (size_t i = 0; i < data.size(); ++i) {
@@ -170,6 +295,9 @@ public:
 		std::cout << "]" << std::endl;
 	}
 
+	/*
+		Prints the shape of the tensor.
+	*/
 	void print_shape() const{
 		std::cout << "( ";
 		for (size_t i = 0; i < shape.size(); i++) {

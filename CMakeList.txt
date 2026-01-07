@@ -1,0 +1,50 @@
+cmake_minimum_required(VERSION 3.14)
+project(CppML)
+
+# 1. Setup - Use C++ 17 or 20 (Standard for modern dev)
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+# 2. Enable Testing
+enable_testing()
+
+# 3. Fetch GoogleTest (Downloads it automatically)
+include(FetchContent)
+FetchContent_Declare(
+  googletest
+  URL https://github.com/google/googletest/archive/refs/heads/main.zip
+)
+# This suppresses installation warnings from GTest
+set(INSTALL_GTEST OFF) 
+FetchContent_MakeAvailable(googletest)
+
+# 4. Define Your Library or Executable
+# Since you have files in "src" and "include"
+# We tell CMake where to find headers
+include_directories(include)
+
+# Create the main executable (Update "main.cpp" to whatever your main file is named)
+# file(GLOB...) is a quick way to grab all .cpp files in src, 
+# but listing them manually is safer. For now, let's grab all.
+file(GLOB SOURCES "src/*.cpp")
+
+add_executable(CppML ${SOURCES})
+
+# 5. Setup Tests
+# Check if the tests folder has files before trying to add them
+if(EXISTS "${CMAKE_SOURCE_DIR}/tests")
+    file(GLOB TEST_SOURCES "tests/*.cpp")
+    if(TEST_SOURCES)
+        add_executable(runTests ${TEST_SOURCES})
+        
+        # Link GTest and your main code to the test runner
+        target_link_libraries(runTests GTest::gtest_main)
+        
+        # Make sure tests can verify your headers too
+        target_include_directories(runTests PRIVATE include)
+
+        # Register tests
+        include(GoogleTest)
+        gtest_discover_tests(runTests)
+    endif()
+endif()

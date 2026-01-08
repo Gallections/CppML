@@ -3,6 +3,7 @@
 #include<iostream>
 #include<vector>
 #include<stdexcept>
+#include<format>
 
 template <typename T>
 class NDArray {
@@ -105,6 +106,21 @@ public:
 		size_t total_size = current_stride;  // By now, we know the current stride actually contains the total number of elements in the ndarray.
 		data.resize(total_size, T());
 	}
+
+	void set_data(const std::vector<T>& input_data) {
+		if (input_data.size() != data.size()) {
+			throw std::invalid_argument(std::format("The size of the data does not match the internal data size, input size should be {}", data.size()));
+		}
+		this->data = input_data;
+	}
+
+	void set_data(std::vector<T>&& input_data) {
+		if (input_data.size() != data.size()) {
+			throw std::invalid_argument(std::format("The size of the data does not match the internal data size, input size should be {}", data.size()));
+		}
+		this->data = std::move(input_data);
+	}
+
 
 	// ====================== Accessor ========================
 	T& operator()(const std::vector<size_t>& indices) {
@@ -283,7 +299,6 @@ public:
 
 	// =================== Utility Functions ======================
 
-
 	/*
 		Prints the tensor in falttened form.
 	*/
@@ -304,5 +319,26 @@ public:
 			std::cout << shape[i] << ", ";
 		}
 		std::cout << ")" << std::endl;
+	}
+
+
+	// ================== Getter Functions ===========================
+	/*
+		returns the reference to the data attribute
+	*/
+	std::vector<T>& get_data() {
+		return data;
+	}
+
+	/*
+		returns the reference the shape
+	*/
+	std::vector<size_t>& get_shape() {
+		return shape;
+	}
+
+	/* returns the strides of the ndarray */
+	std::vector<size_t>& get_strides() {
+		return strides;
 	}
 };

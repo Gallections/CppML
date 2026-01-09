@@ -200,8 +200,17 @@ public:
 		if (other.shape.size() != shape.size()) {
 			throw std::invalid_argument("The dimensions of the ndarrays do not match!");
 		}
+		if (other.shape.size() == 2 && shape.size() == 2) {
+			// Handle 2D case. 
+			return this->matmul(other);
+		}
+
 		if (!std::equal(shape.begin(), shape.end() - 2, other.shape.begin())) {
 			throw std::invalid_argument("The batches for each ndarray must be the same!");
+		}
+
+		if (shape[shape.size() - 1] != other.shape[other.shape.size() - 2]) {
+			throw std::invalid_argument("The shape of the two ndarrays do not match!");
 		}
 
 		// TODO: implement the batched matrix multiplication;
@@ -209,8 +218,8 @@ public:
 		size_t N = other.shape[other.shape.size() - 1];
 		size_t K = shape[shape.size() - 1];
 
-		size_t size_A = strides[1];
-		size_t size_B = other.strides[1];
+		size_t size_A = M * K;
+		size_t size_B = K * N;
 		size_t size_C = M * N;
 
 		// Parepare the result NDArray:
@@ -220,15 +229,15 @@ public:
 		NDArray<T> res(res_shape);
 
 		// Get the pointers
-		T* ptr_A = data.data();
-		T* ptr_B = other.data.data();
+		const T* ptr_A = data.data();
+		const T* ptr_B = other.data.data();
 		T* ptr_C = res.data.data();
 
 		// Compute the size of the batch
 		size_t total_elements = data.size();
 		size_t batch_count = total_elements / size_A;
 
-		for (size_t i = 0; i < total_elements; ++i) {
+		for (size_t i = 0; i < batch_count; ++i) {
 			_matmul(ptr_A, ptr_B, ptr_C, M, N, K);
 
 			ptr_A += size_A;

@@ -180,7 +180,15 @@ public:
 	}
 
 	// ----------------- Transpose -----------------
-	NDArray<T> transpose(const NDArray& other) const {
+
+	/*
+		Returns an ndarray with the specified dimensions swapped.
+		Parameters: 
+			dim1: the first dimension to swap with
+			dim2: the second dimension to swap with
+
+	*/
+	NDArray<T> transpose(const NDArray& other, size_t dim1, size_t dim2) const {
 		return NULL;
 	};
 

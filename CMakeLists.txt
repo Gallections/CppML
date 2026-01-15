@@ -32,18 +32,18 @@ file(GLOB SOURCES "src/*.cpp")
 # --- CORE CHANGE ---
 # We create a "Static Library" named CppML_Lib.
 # This compiles your math code once, so it can be reused.
-add_library(CppML_Lib STATIC ${SOURCES}  "include/BWMLLib/BWMLLib.h" "include/BWMLLib/LinReg.h" "include/BWMLLib/LogReg.h")
+add_library(CppML_Lib STATIC ${SOURCES}  "include/BWMLLib/BWMLLib.h" "include/BWMLLib/LinReg.h" "include/BWMLLib/LogReg.h" "src/LingReg.cpp")
 
 # 5. Create the Main Executable (The App)
 # We create the .exe, and link it to your library
-add_executable(CppML src/CppML.cpp  "include/BWMLLib/BWMLLib.h" "include/BWMLLib/LinReg.h" "include/BWMLLib/LogReg.h") # Assuming you have a main.cpp!
+add_executable(CppML src/CppML.cpp  "include/BWMLLib/BWMLLib.h" "include/BWMLLib/LinReg.h" "include/BWMLLib/LogReg.h" "src/LingReg.cpp") # Assuming you have a main.cpp!
 target_link_libraries(CppML PRIVATE CppML_Lib)
 
 # 6. Setup Tests
 if(EXISTS "${CMAKE_SOURCE_DIR}/tests")
     file(GLOB TEST_SOURCES "tests/*.cpp")
     if(TEST_SOURCES)
-        add_executable(runTests ${TEST_SOURCES}  "include/BWMLLib/BWMLLib.h" "include/BWMLLib/LinReg.h" "include/BWMLLib/LogReg.h")
+        add_executable(runTests ${TEST_SOURCES}  "include/BWMLLib/BWMLLib.h" "include/BWMLLib/LinReg.h" "include/BWMLLib/LogReg.h" "src/LingReg.cpp")
         
         # Link GTest (for the testing framework)
         # AND Link CppML_Lib (so the tests can see your Matrix code)

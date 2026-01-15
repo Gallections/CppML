@@ -92,6 +92,9 @@ public:
 			shape_input: std::vector<size_t>{... args},  
 	
 	*/
+
+	NDArray() = default;
+
 	NDArray(const std::vector<size_t>& shape_input) : shape(shape_input) {
 		strides.resize(shape.size());
 		size_t current_stride = 1;
@@ -121,6 +124,9 @@ public:
 		this->data = std::move(input_data);
 	}
 
+	void set_size(int data_size) {
+		this->data.resize(data_size);
+	}
 
 	// ====================== Accessor ========================
 	T& operator()(const std::vector<size_t>& indices) {
@@ -189,6 +195,8 @@ public:
 
 	*/
 	NDArray<T> transpose(const NDArray& other, size_t dim1, size_t dim2) const {
+		// All we need is just to change the shape of the NDArray
+		// Plus changing the strides. 
 		return NULL;
 	};
 
@@ -204,6 +212,14 @@ public:
 		Params: 
 			other: The second tensor (ndarray)
 	*/
+
+	double parse_double() {
+		if (this->data.size() == 1) {
+			return static_cast<double>(this->data[0]);
+		}
+		throw std::logic_error("The size of your data is not 1, cannot be parsed into a double!");
+	}
+
 	NDArray<T> batched_matmul(const NDArray& other) const {
 		if (other.shape.size() != shape.size()) {
 			throw std::invalid_argument("The dimensions of the ndarrays do not match!");

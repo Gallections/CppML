@@ -5,5 +5,15 @@
 namespace BWMLLib {
 	class LogReg {
 
+
+
+
+	private:
+
+
+	public:
+
+		
+
 	};
 }

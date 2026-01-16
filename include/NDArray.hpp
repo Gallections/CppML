@@ -99,7 +99,7 @@ public:
 		strides.resize(shape.size());
 		size_t current_stride = 1;
 
-		// We are comuting the strides based off the shape
+		// We are computing the strides based off the shape
 		for (int i = shape.size() - 1; i >= 0; --i) {
 			strides[i] = current_stride;
 			current_stride *= shape[i];
@@ -109,6 +109,51 @@ public:
 		size_t total_size = current_stride;  // By now, we know the current stride actually contains the total number of elements in the ndarray.
 		data.resize(total_size, T());
 	}
+
+	// copy constructor
+	NDArray(const NDArray& other) {
+		this->data = std::vector<T>(other.data);
+		this->shape = std::vector<size_t>(other.shape);
+		this->strides = std::vector<size_t>(other.strides);
+	};
+
+	// copy assignment operator
+	NDArray& operator=(const NDArray& other) {
+		if (&other == this) return *this;
+		this->data = std::vector<T>(other.data);
+		this->shape = std::vector<size_t>(other.shape);
+		this->strides = std::vector<size_t>(other.strides);
+
+		return *this;
+	}
+
+
+	// move constructor
+	NDArray(NDArray&& other) noexcept {
+		this->data = other.data;
+		this->shape = other.shape;
+		this->strides = other.strides;
+
+		other.data.clear();
+		other.shape.clear();
+		other.strides.clear();
+	}
+	
+
+	// move assignment operator
+	NDArray& operator=(NDArray&& other) noexcept {
+		if (other == *this) return *this;
+		this->data = other.data;
+		this->shape = other.shape;
+		this->strides = other.strides;
+
+		other.data.clear();
+		other.shape.clear();
+		other.strides.clear();
+
+		return *this;
+	}
+
 
 	void set_data(const std::vector<T>& input_data) {
 		if (input_data.size() != data.size()) {
@@ -156,7 +201,39 @@ public:
 
 		NDArray<T> result(shape);
 		for (size_t i = 0; i < data.size(); i++) {
-			result[i] = data[i] + other.data[i];
+			result.data[i] = data[i] + other.data[i];
+		}
+		return result;
+	}
+
+	/*
+		Performs elementwise tensor additions.
+
+		Params:
+			other: The second ndarray we are adding with.
+	*/
+	NDArray<T> operator-(const NDArray<T>& other) const {
+		if (shape != other.shape) {
+			throw std::invalid_argument("The two ndarrays must have the same shape!");
+		}
+
+		NDArray<T> result(shape);
+		for (size_t i = 0; i < data.size(); i++) {
+			result.data[i] = data[i] - other.data[i];
+		}
+		return result;
+	}
+
+	/*
+		Performs elementwise tensor additions.
+
+		Params:
+			other: The second ndarray we are adding with.
+	*/
+	NDArray<T> operator/(T scalar) const {
+		NDArray<T> result(shape);
+		for (size_t i = 0; i < data.size(); ++i) {
+			result.data[i] = data[i] / scalar;
 		}
 		return result;
 	}
@@ -180,13 +257,12 @@ public:
 	NDArray<T> operator*(T scalar) const {
 		NDArray<T> result(shape);
 		for (size_t i = 0; i < data.size(); ++i) {
-			result[i] = scalar * data[i];
+			result.data[i] = scalar * data[i];
 		}
 		return result;
 	}
 
-	// ----------------- Transpose -----------------
-
+// --------------------- Internal Properties -------------------------
 	/*
 		Returns an ndarray with the specified dimensions swapped.
 		Parameters: 
@@ -194,11 +270,65 @@ public:
 			dim2: the second dimension to swap with
 
 	*/
-	NDArray<T> transpose(const NDArray& other, size_t dim1, size_t dim2) const {
+	NDArray<T> transpose(size_t dim1, size_t dim2) const {
 		// All we need is just to change the shape of the NDArray
 		// Plus changing the strides. 
-		return NULL;
+		std::vector<size_t> res_shape = this->shape;
+		res_shape[dim1] = this->shape[dim2];
+		res_shape[dim2] = this->shape[dim1];
+		NDArray<T> res(std::move(res_shape));
+
+		return res;
 	};
+
+
+	/*
+		This squares all the values in the data. We may consider leveraging CUDA for this purpose.
+		Should update the strides at the same time. 
+	*/
+	NDArray<T> square() {
+		std::vector<T> squared_data;
+		for (auto iter = this->data.begin(); iter != this->data.end(); iter++) {
+			squared_data.push_back((*iter) * (*iter));
+		}
+		// note that the strides do not change.
+		NDArray<T> res(shape);
+		res.set_data(std::move(squared_data));
+		return res;
+	}
+
+	/*
+		Returns the sum of all entries in the array.
+	*/
+	T sum() {
+		T result = T();
+		for (auto& data : this->data) {
+			result += data;
+		}
+		return result;
+	}
+
+	/* 
+		Returns the square root all entries in the array.
+	*/
+	NDArray<T> square_root() {
+		std::vector<T> square_root_data;
+		for (auto& data : this->data) {
+			square_root_data.push_back(std::sqrt(data));
+		}
+
+		NDArray<T> res(shape);
+		res.set_data(square_root_data);
+		return res;
+	}
+
+
+	/*
+		Returns the number of elements in the outermost dimension.
+	*/
+	size_t get_size() {
+		return shape[0];
+	}
 
 	// ----------- Matrix Multiplication --------------
 	/*

@@ -59,6 +59,54 @@ TEST(NDArrayConstruction, ConstructingNDArray) {
 }
 
 
+// ============== NDArray internal properties ==================
+TEST(NDArrayInternalProperties, twoDTranspose) {
+	NDArray<int> m1({ 1, 2 });
+	NDArray<int> res = m1.transpose(0, 1);
+	std::vector<size_t> res_shape({2, 1});
+	std::vector<size_t> res_strides({1, 1});
+
+	EXPECT_EQ(res.get_shape(), res_shape);
+	EXPECT_EQ(res.get_strides(), res_strides);
+}
+
+TEST(NDArrayInternalProperties, NDTranspose) {
+	NDArray<int> m1({ 3, 5, 7, 2});
+	NDArray<int> res = m1.transpose(0, 3);
+	std::vector<size_t> res_shape({ 2, 5, 7, 3 });
+	std::vector<size_t> res_strides({ 105, 21, 3, 1 });
+
+	EXPECT_EQ(res.get_shape(), res_shape);
+	EXPECT_EQ(res.get_strides(), res_strides);
+}
+
+TEST(NDArrayInternalProperties, squaring) {
+	NDArray<int> m1({ 2, 2 });
+	NDArray<float> m2({2, 1});
+
+	m1.set_data({2, 1, 3, 4});
+	m2.set_data({1.23f, 2.004f});
+
+	std::vector<int> expected_m1({4, 1, 9, 16});
+	std::vector<float> expected_m2({1.5129f, 4.016016f});
+
+	NDArray<int> m1_sq = m1.square();
+	NDArray<float> m2_sq = m2.square();
+
+	EXPECT_EQ(expected_m1, m1_sq.get_data());
+
+	ASSERT_EQ(expected_m2.size(), m2_sq.get_data().size());
+	for (size_t i = 0; i < expected_m2.size(); ++i) {
+		EXPECT_FLOAT_EQ(expected_m2[i], m2_sq.get_data()[i]);
+	}
+}
+
+TEST(NDArrayInternalProperties, summing) {
+	NDArray<int> m1({ 2, 2, 2 });
+	m1.set_data({1, 2, 3, 4, 5, 6, 7, 8});
+	EXPECT_EQ(m1.sum(), 36);
+}
+
 // ============== 2DArrayMultiplication ================
 TEST(TwoDArrayMultiplication, SimpleSuccess1) {
 	NDArray<int> m1({1, 2});
